@@ -1,0 +1,9 @@
+# bazel
+bazel-*
+
+# MacOS
+.DS_Store
+
+# zig
+.zig-cache/
+zig-out/

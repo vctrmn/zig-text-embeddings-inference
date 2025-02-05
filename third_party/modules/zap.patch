@@ -1,0 +1,77 @@
+--- /dev/null
++++ MODULE.bazel
+@@ -0,0 +1,10 @@
++"""
++Module for ZAP - blazingly fast backends in zig
++"""
++module(name = "zap", version = "0.9.1")
++
++bazel_dep(name = "rules_cc", version = "0.0.17")
++bazel_dep(name = "rules_zig", version = "0.6.1")
++ZIG_VERSION = "0.13.0"
++zig = use_extension("@rules_zig//zig:extensions.bzl", "zig")
++zig.toolchain(zig_version = ZIG_VERSION)
+
+--- /dev/null
++++ BUILD.bazel
+@@ -0,0 +1,56 @@
++load("@rules_cc//cc:defs.bzl", "cc_library")
++load("@rules_zig//zig:defs.bzl", "zig_module")
++
++cc_library(
++    name = "facil_io",
++    srcs = glob([
++        "facil.io/lib/**/*.c",
++    ]),
++    hdrs = glob([
++        "facil.io/lib/**/*.h",
++    ]),
++    copts = [
++        "-I.",
++        "-Ifacil.io/lib",
++        "-Ifacil.io/lib/facil",
++        "-Ifacil.io/lib/facil/cli",
++        "-Ifacil.io/lib/facil/legacy",
++        "-Ifacil.io/lib/facil/fiobj",
++        "-Ifacil.io/lib/facil/http",
++        "-Ifacil.io/lib/facil/http/parsers",
++        "-Ifacil.io/lib/facil/redis",
++        "-include string.h",
++        "-include stdlib.h",
++        "-include errno.h",
++        "-include stdio.h",
++        "-DHAVE_UNIX_FEATURES=1",
++        "-iquote .",
++    ],
++    defines = [
++        "FIO_CLI_SOURCE",
++        "FIO_REDIS_ENGINE_SOURCE",
++        "FIO_RESP_SOURCE",
++        "FIO_HTTP_SOURCE",
++        "FIO_HTTP1_SOURCE",
++    ],
++    includes = [
++        "facil.io/lib",
++        "facil.io/lib/facil",
++        "facil.io/lib/facil/cli",
++        "facil.io/lib/facil/fiobj",
++        "facil.io/lib/facil/http",
++        "facil.io/lib/facil/http/parsers",
++        "facil.io/lib/facil/legacy",
++        "facil.io/lib/facil/redis",
++    ],
++    visibility = ["//visibility:public"],
++)
++
++zig_module(
++    name = "zap",
++    srcs = glob([
++        "**/*.zig",
++    ]),
++    main = "src/zap.zig",
++    visibility = ["//visibility:public"],
++)
+
+similarity index 100%
+rename from facil.io/scripts/build
+rename to facil.io/scripts/build.sh
