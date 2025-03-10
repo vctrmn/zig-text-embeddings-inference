@@ -18,11 +18,21 @@ brew install bazelisk
 </details>
 
 <details><summary>
-Windows installation :
+Windows installation (Not tested) :
 </summary>
 
 ```bash
 choco install bazelisk
+```
+</details>
+
+<details><summary>
+Linux installation :
+</summary>
+
+```bash
+curl -L -o /usr/local/bin/bazel 'https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-linux-amd64'
+chmod +x /usr/local/bin/bazel
 ```
 </details>
 
