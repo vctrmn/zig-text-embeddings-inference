@@ -1,0 +1,50 @@
+name: Build Zig Text Embeddings Inference
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: zig-text-embeddings-inference-linux-x64
+          - os: windows-latest
+            artifact_name: zig-text-embeddings-inference-windows-x64
+          - os: macos-13
+            artifact_name: zig-text-embeddings-inference-macos-intel-x64
+          - os: macos-latest
+            artifact_name: zig-text-embeddings-inference-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Bazelisk
+        uses: bazelbuild/setup-bazelisk@v2
+
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.cache/bazel"
+          key: ${{ runner.os }}-bazel-${{ hashFiles('**/MODULE.bazel', '**/WORKSPACE', '**/*.bzl', '**/*.bazel') }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-
+
+      - name: Build project
+        run: |
+          bazel build -c opt //:server
+
+      - name: Verify build success
+        run: |
+          echo "✅ Build successful on ${{ matrix.os }}"
