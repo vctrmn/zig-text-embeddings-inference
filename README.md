@@ -17,10 +17,19 @@ brew install bazelisk
 ```
 </details>
 
+<details><summary>
+Windows installation :
+</summary>
+
+```bash
+choco install bazelisk
+```
+</details>
+
 
 ### Build and run the server
 ```bash
-bazel run //server
+bazel run -c opt //:server
 ```
 
 ## Project structure
@@ -30,6 +39,5 @@ bazel run //server
 ├── server
 │   ├── BUILD.bazel     # Server build configuration using zig_binary rule
 │   └── main.zig        # Server implementation with Zap HTTP server
-└── third_party
-    └── modules         # Contains patches for Zig modules (e.g. Zap, ZML)
+└── third_party         # Contains Zig modules (e.g. Zap, ZML)
 ```

@@ -2,8 +2,10 @@ load("@rules_zig//zig:defs.bzl", "zig_binary")
 
 zig_binary(
     name = "server",
+    srcs = glob(["src/**/*.zig"]),
     cdeps = ["@com_github_zigzap_zap//:facil_io"],
-    main = "main.zig",
+    copts = ["-lc"],
+    main = "src/main.zig",
     visibility = ["//visibility:public"],
     deps = ["@com_github_zigzap_zap//:zap"],
 )
