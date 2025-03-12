@@ -36,12 +36,3 @@ zig_module(
     srcs = glob(["**/*.zig"]),
     visibility = ["//visibility:public"],
 )
-
-# zig_library(
-#     name = "zap",
-#     srcs = glob([
-#         "**/*.zig",
-#     ]),
-#     main = "src/zap.zig",
-#     visibility = ["//visibility:public"],
-# )

@@ -1,0 +1,53 @@
+package(default_visibility = ["//visibility:public"])
+
+# Config settings for different platforms
+config_setting(
+    name = "is_macos_x86_64",
+    constraint_values = [
+        "@platforms//os:macos",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "is_macos_aarch64",
+    constraint_values = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+config_setting(
+    name = "is_linux_x86_64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+# Download and create a single ZLS binary for the current platform
+genrule(
+    name = "zls_binary",
+    outs = ["zls_binary"],
+    cmd = select({
+        ":is_macos_x86_64": """
+            curl -L "https://github.com/zigtools/zls/releases/download/0.13.0/zls-x86_64-macos.tar.xz" | tar -xJ -C $(@D)
+            mv $(@D)/zls $@
+            chmod +x $@
+        """,
+        ":is_macos_aarch64": """
+            curl -L "https://github.com/zigtools/zls/releases/download/0.13.0/zls-aarch64-macos.tar.xz" | tar -xJ -C $(@D)
+            mv $(@D)/zls $@
+            chmod +x $@
+        """,
+        ":is_linux_x86_64": """
+            curl -L "https://github.com/zigtools/zls/releases/download/0.13.0/zls-x86_64-linux.tar.xz" | tar -xJ -C $(@D)
+            mv $(@D)/zls $@
+            chmod +x $@
+        """,
+        "//conditions:default": """
+            echo "Unsupported platform. The project only supports macOS (intel and silicon) and Linux on x86_64." 
+            exit 1
+        """,
+    }),
+)

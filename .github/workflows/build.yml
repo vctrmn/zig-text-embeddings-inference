@@ -18,12 +18,10 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: zig-text-embeddings-inference-linux-x64
-          # - os: windows-latest
-          #   artifact_name: zig-text-embeddings-inference-windows-x64
           - os: macos-13
-            artifact_name: zig-text-embeddings-inference-macos-intel-x64
+            artifact_name: zig-text-embeddings-inference-macos-x64
           - os: macos-15
-            artifact_name: zig-text-embeddings-inference-macos-arm64
+            artifact_name: zig-text-embeddings-inference-macos-aarch64
 
     steps:
       - uses: actions/checkout@v4
