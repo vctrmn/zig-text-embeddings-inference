@@ -1,0 +1,32 @@
+# Bazel
+bazel-*
+.bazelrc.user
+.bazel-cache/
+
+# Zig
+zig-cache/
+zig-out/
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Logs
+*.log
+logs/
+
+# Compiled binary files
+*.so
+*.dylib
+*.dll
+*.exe
+*.o
+*.a
+*.obj

@@ -1,0 +1,28 @@
+load("@aspect_bazel_lib//lib:tar.bzl", "mtree_spec", "tar")
+load("@zml//bazel:zig.bzl", "zig_cc_binary")
+
+zig_cc_binary(
+    name = "app",
+    main = "src/main.zig",
+    deps = [
+        "@com_github_zigzap_zap//:zap",
+        "@zml//async",
+        "@zml//zml",
+    ],
+)
+
+mtree_spec(
+    name = "mtree",
+    srcs = [":app"],
+)
+
+tar(
+    name = "archive",
+    srcs = [":app"],
+    args = [
+        "--options",
+        "zstd:compression-level=9",
+    ],
+    compress = "zstd",
+    mtree = ":mtree",
+)

@@ -1,0 +1,29 @@
+"""
+Module file for Zig text embeddings inference Bazel workspace.
+"""
+module(
+    name = "zig_text_embeddings_inference",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_zig", version = "20250314.0-b9739c6")  # Should match ZML rules_zig version and not the one from bcr
+bazel_dep(name = "zml", version = "0.0.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "aspect_bazel_lib", version = "2.14.0")
+bazel_dep(name = "hermetic_cc_toolchain", version = "3.2.0")
+
+# Configure Zig toolchain
+zig = use_extension("@rules_zig//zig:extensions.bzl", "zig")
+zig.toolchain(zig_version = "0.14.0")
+
+# Use ZML repository for the zml bazel_dep
+git_override(
+    module_name = "zml",
+    remote = "https://github.com/zml/zml.git",
+    commit = "e0336dc9b346d54e5392f55a08778c7ffda7ea57",  # master branch @ 21/03/2025
+)
+
+# ZAP does not provide bazel integration (no MODULE.bazel / BUILD.bazel),
+# so we fetch and configure it using our external_deps extension in third_party
+external_deps = use_extension("//:third_party/external_deps.bzl", "external_deps")
+use_repo(external_deps, "com_github_zigzap_zap")
