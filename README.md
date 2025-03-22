@@ -32,3 +32,8 @@ chmod +x /usr/local/bin/bazel
 ```bash
 bazel run -c opt //:app
 ```
+
+This should probably work as well ! (Not tested yet)
+```bash
+bazel run -c opt --@zml//runtimes:cuda=true //:app
+```
