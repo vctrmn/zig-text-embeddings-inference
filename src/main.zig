@@ -2,9 +2,9 @@ const asynk = @import("async");
 const zml = @import("zml");
 const zap = @import("zap");
 const std = @import("std");
-const default_route = @import("routes/common.zig");
+const http_utils = @import("utils/http.zig");
 const HealthCheckEndpoint = @import("routes/healthz.zig").HealthCheckEndpoint;
-const HelloWorldEndpoint = @import("routes/helloworld.zig").HelloWorldEndpoint;
+const HelloWorldEndpoint = @import("routes/hello.zig").HelloWorldEndpoint;
 
 const log = std.log.scoped(.app);
 
@@ -32,10 +32,10 @@ pub fn asyncMain() !void {
     const platform = context.autoPlatform(.{});
     context.printAvailablePlatforms(platform);
 
-    // Create HTTP server
+    // Create HTTP server with default 404 handler
     var server = zap.Endpoint.Listener.init(allocator, .{
         .port = PORT,
-        .on_request = default_route.notFoundHandler,
+        .on_request = http_utils.handleNotFound,
         .log = true,
     });
     defer server.deinit();
@@ -49,7 +49,7 @@ pub fn asyncMain() !void {
     // Start HTTP server
     try server.listen();
     log.info("✅\tServer listening on localhost:{d}", .{PORT});
-    log.info("📝\tExample usage: curl http://localhost:{d}/api/helloworld", .{PORT});
+    log.info("📝\tExample usage: curl http://localhost:{d}/api/hello", .{PORT});
 
     // Start worker threads
     zap.start(.{

@@ -36,3 +36,24 @@ pub fn sendErrorResponse(request: zap.Request, error_message: []const u8, status
 
     sendJsonResponse(request, error_response, status);
 }
+
+/// Default handler for requests that don't match any route
+pub fn handleNotFound(request: zap.Request) void {
+    request.setStatus(.not_found);
+    sendErrorResponse(request, "Resource not found", .not_found);
+}
+
+/// Not allowed response for endpoint
+pub fn handleMethodNotAllowed(endpoint: *zap.Endpoint, request: zap.Request) void {
+    _ = endpoint;
+    sendErrorResponse(request, "Method not allowed", .method_not_allowed);
+}
+
+/// Options method for endpoint
+pub fn handleOptions(endpoint: *zap.Endpoint, request: zap.Request) void {
+    _ = endpoint;
+    request.setHeader("Access-Control-Allow-Origin", "*") catch return;
+    request.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS") catch return;
+    request.setStatus(.no_content);
+    request.markAsFinished(true);
+}

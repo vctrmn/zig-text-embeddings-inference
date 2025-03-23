@@ -2,15 +2,20 @@ const std = @import("std");
 const zap = @import("zap");
 const http_utils = @import("../utils/http.zig");
 
-/// Handler for health check endpoint
-pub const HealthCheckEndpoint = struct {
+/// Response for hello world
+const HelloResponse = struct {
+    message: []const u8,
+};
+
+/// Handler for hello world endpoint
+pub const HelloWorldEndpoint = struct {
     route: zap.Endpoint = undefined,
 
-    pub fn init() HealthCheckEndpoint {
+    pub fn init() HelloWorldEndpoint {
         return .{
             .route = zap.Endpoint.init(.{
-                .path = "/api/healthz",
-                .get = handleHealthCheck,
+                .path = "/api/hello",
+                .get = handleHelloWorld,
                 .options = http_utils.handleOptions,
                 .post = http_utils.handleMethodNotAllowed,
                 .put = http_utils.handleMethodNotAllowed,
@@ -20,13 +25,13 @@ pub const HealthCheckEndpoint = struct {
         };
     }
 
-    pub fn getRoute(self: *HealthCheckEndpoint) *zap.Endpoint {
+    pub fn getRoute(self: *HelloWorldEndpoint) *zap.Endpoint {
         return &self.route;
     }
 
-    fn handleHealthCheck(route: *zap.Endpoint, request: zap.Request) void {
+    fn handleHelloWorld(route: *zap.Endpoint, request: zap.Request) void {
         _ = route;
-        request.setStatus(.no_content);
-        request.markAsFinished(true);
+        const response = HelloResponse{ .message = "Hello World!" };
+        http_utils.sendJsonResponse(request, response, .ok);
     }
 };
