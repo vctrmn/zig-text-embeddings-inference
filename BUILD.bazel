@@ -3,6 +3,9 @@ load("@zml//bazel:zig.bzl", "zig_cc_binary")
 
 zig_cc_binary(
     name = "app",
+    srcs = glob(
+        ["src/**/*.zig"],
+    ),
     main = "src/main.zig",
     deps = [
         "@com_github_zigzap_zap//:zap",

@@ -2,6 +2,10 @@ const asynk = @import("async");
 const zml = @import("zml");
 const zap = @import("zap");
 const std = @import("std");
+const default_route = @import("routes/common.zig");
+const HealthCheckEndpoint = @import("routes/healthz.zig").HealthCheckEndpoint;
+const HelloWorldEndpoint = @import("routes/helloworld.zig").HelloWorldEndpoint;
+
 const log = std.log.scoped(.app);
 
 pub const std_options: std.Options = .{
@@ -18,6 +22,8 @@ pub fn main() !void {
 
 /// Main async function
 pub fn asyncMain() !void {
+    const allocator = std.heap.c_allocator;
+
     // Initialize ZML context
     var context = try zml.Context.init();
     defer context.deinit();
@@ -26,16 +32,26 @@ pub fn asyncMain() !void {
     const platform = context.autoPlatform(.{});
     context.printAvailablePlatforms(platform);
 
-    var listener = zap.HttpListener.init(.{
+    // Create HTTP server
+    var server = zap.Endpoint.Listener.init(allocator, .{
         .port = PORT,
-        .on_request = on_request,
+        .on_request = default_route.notFoundHandler,
         .log = true,
     });
-    try listener.listen();
+    defer server.deinit();
 
-    log.info("✅\tHTTP server listening on localhost:{d}", .{PORT});
-    log.info("📝\tExample usage: curl http://localhost:{d}", .{PORT});
+    // Register routes
+    var healthcheck_endpoint = HealthCheckEndpoint.init();
+    try server.register(healthcheck_endpoint.getRoute());
+    var helloworld_endpoint = HelloWorldEndpoint.init();
+    try server.register(helloworld_endpoint.getRoute());
 
+    // Start HTTP server
+    try server.listen();
+    log.info("✅\tServer listening on localhost:{d}", .{PORT});
+    log.info("📝\tExample usage: curl http://localhost:{d}/api/helloworld", .{PORT});
+
+    // Start worker threads
     zap.start(.{
         .threads = 1,
         .workers = 1,
