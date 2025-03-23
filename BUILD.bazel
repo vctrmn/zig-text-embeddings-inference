@@ -8,6 +8,7 @@ zig_cc_binary(
     ),
     main = "src/main.zig",
     deps = [
+        "@com_github_hejsil_clap//:clap",
         "@com_github_zigzap_zap//:zap",
         "@zml//async",
         "@zml//zml",

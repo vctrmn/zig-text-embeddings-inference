@@ -2,6 +2,7 @@ const asynk = @import("async");
 const zml = @import("zml");
 const zap = @import("zap");
 const std = @import("std");
+const config = @import("config.zig");
 const http_utils = @import("utils/http.zig");
 const HealthCheckEndpoint = @import("routes/healthz.zig").HealthCheckEndpoint;
 const HelloWorldEndpoint = @import("routes/hello.zig").HelloWorldEndpoint;
@@ -13,8 +14,6 @@ pub const std_options: std.Options = .{
     .logFn = asynk.logFn(std.log.defaultLog),
 };
 
-const PORT = 3000;
-
 /// Entry point
 pub fn main() !void {
     try asynk.AsyncThread.main(std.heap.c_allocator, asyncMain);
@@ -23,6 +22,12 @@ pub fn main() !void {
 /// Main async function
 pub fn asyncMain() !void {
     const allocator = std.heap.c_allocator;
+
+    // Parse configuration from command line
+    const app_config = config.parseConfig(allocator) catch |err| switch (err) {
+        error.HelpRequested => return,
+        else => return err,
+    };
 
     // Initialize ZML context
     var context = try zml.Context.init();
@@ -34,7 +39,7 @@ pub fn asyncMain() !void {
 
     // Create HTTP server with default 404 handler
     var server = zap.Endpoint.Listener.init(allocator, .{
-        .port = PORT,
+        .port = app_config.port,
         .on_request = http_utils.handleNotFound,
         .log = true,
     });
@@ -48,8 +53,8 @@ pub fn asyncMain() !void {
 
     // Start HTTP server
     try server.listen();
-    log.info("✅\tServer listening on localhost:{d}", .{PORT});
-    log.info("📝\tExample usage: curl http://localhost:{d}/api/hello", .{PORT});
+    log.info("✅\tServer listening on localhost:{d}", .{app_config.port});
+    log.info("📝\tExample usage: curl http://localhost:{d}/api/hello", .{app_config.port});
 
     // Start worker threads
     zap.start(.{

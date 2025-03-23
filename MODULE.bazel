@@ -25,4 +25,4 @@ git_override(
 # ZAP does not provide bazel integration (no MODULE.bazel / BUILD.bazel),
 # so we fetch and configure it using our external_deps extension in third_party
 external_deps = use_extension("//:third_party/external_deps.bzl", "external_deps")
-use_repo(external_deps, "com_github_zigzap_zap")
+use_repo(external_deps, "com_github_zigzap_zap", "com_github_hejsil_clap")
