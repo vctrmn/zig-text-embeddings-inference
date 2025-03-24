@@ -1,10 +1,14 @@
 const std = @import("std");
 const clap = @import("clap");
 
+const log = std.log.scoped(.config);
+
 /// Command-line argument parameters definition
 const cli_params = clap.parseParamsComptime(
     \\--help                                print this help
     \\--port                    <UINT>      port to listen on (default: 3000)
+    \\--tokenizer               <PATH>      tokenizer path (required)
+    \\--model                   <PATH>      model path (required)
 );
 
 /// CLI parameter parsers
@@ -23,9 +27,12 @@ fn parseBool(in: []const u8) error{}!bool {
 /// Configuration structure for the application
 pub const Config = struct {
     port: u16,
+    tokenizer: []const u8,
+    model: []const u8,
 };
 
 /// Parse command line arguments into configuration
+// TODO: Unit test
 pub fn parseConfig(allocator: std.mem.Allocator) !Config {
     const stderr = std.io.getStdErr().writer();
 
@@ -47,11 +54,46 @@ pub fn parseConfig(allocator: std.mem.Allocator) !Config {
         return error.HelpRequested;
     }
 
-    const config = Config{
-        .port = @intCast(cli.args.port orelse 3000),
+    const tokenizer_path = cli.args.tokenizer orelse {
+        log.err("Missing required parameter: --tokenizer\n", .{});
+        try printHelp();
+        return error.MissingTokenizer;
     };
 
-    return config;
+    const model_path = cli.args.model orelse {
+        log.err("Missing required parameter: --model\n", .{});
+        try printHelp();
+        return error.MissingModel;
+    };
+
+    // Validate file paths
+    if (!validateFilePath(tokenizer_path)) {
+        log.err("Invalid tokenizer path: {s}\n", .{tokenizer_path});
+        return error.InvalidTokenizerPath;
+    }
+
+    if (!validateFilePath(model_path)) {
+        log.err("Invalid model path: {s}\n", .{model_path});
+        return error.InvalidModelPath;
+    }
+
+    return Config{
+        .port = @intCast(cli.args.port orelse 3000),
+        .tokenizer = tokenizer_path,
+        .model = model_path,
+    };
+}
+
+/// Validate that a file path exists and is accessible
+// TODO: Unit test
+fn validateFilePath(path: []const u8) bool {
+    const file = std.fs.cwd().openFile(path, .{}) catch |err| {
+        log.err("Error opening file at path {s}: {}", .{ path, err });
+        return false;
+    };
+    defer file.close();
+
+    return true;
 }
 
 /// Print CLI usage help

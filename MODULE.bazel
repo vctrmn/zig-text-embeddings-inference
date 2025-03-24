@@ -26,3 +26,28 @@ git_override(
 # so we fetch and configure it using our external_deps extension in third_party
 external_deps = use_extension("//:third_party/external_deps.bzl", "external_deps")
 use_repo(external_deps, "com_github_zigzap_zap", "com_github_hejsil_clap")
+
+# Huggingface extension
+huggingface = use_extension("@zml//bazel:huggingface.bzl", "huggingface")
+huggingface.model(
+    name = "nomic-ai-modernbert-embed-base",
+    build_file_content = """\
+package(default_visibility = ["//visibility:public"])
+filegroup(
+    name = "model",
+    srcs = ["model.safetensors"],
+)
+
+filegroup(
+    name = "tokenizer",
+    srcs = ["tokenizer.json"],
+)
+""",
+    commit = "d556a88e332558790b210f7bdbe87da2fa94a8d8",
+    includes = [
+        "model.safetensors",
+        "tokenizer.json",
+    ],
+    model = "nomic-ai/modernbert-embed-base",
+)
+use_repo(huggingface, "nomic-ai-modernbert-embed-base")

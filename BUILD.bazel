@@ -6,11 +6,20 @@ zig_cc_binary(
     srcs = glob(
         ["src/**/*.zig"],
     ),
+    args = [
+        "--model=$(location @nomic-ai-modernbert-embed-base//:model.safetensors)",
+        "--tokenizer=$(location @nomic-ai-modernbert-embed-base//:tokenizer)",
+    ],
+    data = [
+        "@nomic-ai-modernbert-embed-base//:model.safetensors",
+        "@nomic-ai-modernbert-embed-base//:tokenizer",
+    ],
     main = "src/main.zig",
     deps = [
         "@com_github_hejsil_clap//:clap",
         "@com_github_zigzap_zap//:zap",
         "@zml//async",
+        "@zml//stdx",
         "@zml//zml",
     ],
 )

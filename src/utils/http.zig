@@ -48,12 +48,3 @@ pub fn handleMethodNotAllowed(endpoint: *zap.Endpoint, request: zap.Request) voi
     _ = endpoint;
     sendErrorResponse(request, "Method not allowed", .method_not_allowed);
 }
-
-/// Options method for endpoint
-pub fn handleOptions(endpoint: *zap.Endpoint, request: zap.Request) void {
-    _ = endpoint;
-    request.setHeader("Access-Control-Allow-Origin", "*") catch return;
-    request.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS") catch return;
-    request.setStatus(.no_content);
-    request.markAsFinished(true);
-}
