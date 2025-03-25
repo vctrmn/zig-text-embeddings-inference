@@ -120,7 +120,13 @@ pub fn asyncMain() !void {
     // Register routes
     var healthcheck_endpoint = HealthCheckEndpoint.init();
     try server.register(healthcheck_endpoint.getRoute());
-    var embeddings_endpoint = EmbeddingsEndpoint.init();
+    var embeddings_endpoint = try EmbeddingsEndpoint.init(
+        allocator,
+        tokenizer,
+        model_executable,
+        app_config.seq_len,
+    );
+    defer embeddings_endpoint.deinit();
     try server.register(embeddings_endpoint.getRoute());
 
     // Start HTTP server
