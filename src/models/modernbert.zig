@@ -9,7 +9,7 @@ const Tensor = zml.Tensor;
 
 pub const ModernBertOptions = struct {
     num_attention_heads: i64,
-    pad_token: u32,
+    pad_token_id: u32,
     local_attention: u32,
     tie_word_embeddings: bool = false,
 };
@@ -73,7 +73,7 @@ pub const ModernBertModel = struct {
     pub fn forward(self: ModernBertModel, input_ids: Tensor) Tensor {
         var hidden_states: Tensor = zml.call(self.embeddings, .forward, .{input_ids}).withTags(.{ .b, .src, .d });
 
-        const global_mask = globalAttnMask(input_ids, hidden_states.dtype(), self.options.pad_token);
+        const global_mask = globalAttnMask(input_ids, hidden_states.dtype(), self.options.pad_token_id);
         const local_mask = localAttnMask(global_mask, self.options.local_attention);
 
         // Process through all encoder layers
@@ -93,11 +93,11 @@ pub const ModernBertModel = struct {
 
     /// Find [PAD] tokens in inputs, and assign them a -inf attention mask.
     /// Output shapes follows zml.nn.sdpa convention: .{ .b, .q, .k }
-    pub fn globalAttnMask(input_ids: Tensor, dt: zml.DataType, pad_token: u32) Tensor {
+    pub fn globalAttnMask(input_ids: Tensor, dt: zml.DataType, pad_token_id: u32) Tensor {
         const ids = input_ids.withTags(.{ .b, .k });
 
         // Mask keys where corresponding token is [PAD]
-        const padding = ids.cmp(.EQ, Tensor.scalar(pad_token, ids.dtype()));
+        const padding = ids.cmp(.EQ, Tensor.scalar(pad_token_id, ids.dtype()));
         const pad_mask = padding.select(Tensor.constant(.{}, dt.minValue()), Tensor.constant(.{}, dt.zero()));
 
         // Broadcast to the desired output shape.

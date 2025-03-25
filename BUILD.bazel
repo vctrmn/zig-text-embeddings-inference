@@ -7,10 +7,12 @@ zig_cc_binary(
         ["src/**/*.zig"],
     ),
     args = [
+        "--config=$(location @nomic-ai-modernbert-embed-base//:config)",
         "--model=$(location @nomic-ai-modernbert-embed-base//:model.safetensors)",
         "--tokenizer=$(location @nomic-ai-modernbert-embed-base//:tokenizer)",
     ],
     data = [
+        "@nomic-ai-modernbert-embed-base//:config",
         "@nomic-ai-modernbert-embed-base//:model.safetensors",
         "@nomic-ai-modernbert-embed-base//:tokenizer",
     ],

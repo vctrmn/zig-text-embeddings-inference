@@ -42,11 +42,17 @@ filegroup(
     name = "tokenizer",
     srcs = ["tokenizer.json"],
 )
+
+filegroup(
+    name = "config",
+    srcs = ["config.json"],
+)
 """,
     commit = "d556a88e332558790b210f7bdbe87da2fa94a8d8",
     includes = [
         "model.safetensors",
         "tokenizer.json",
+        "config.json",
     ],
     model = "nomic-ai/modernbert-embed-base",
 )

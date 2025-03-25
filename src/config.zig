@@ -7,8 +7,10 @@ const log = std.log.scoped(.config);
 const cli_params = clap.parseParamsComptime(
     \\--help                                print this help
     \\--port                    <UINT>      port to listen on (default: 3000)
-    \\--tokenizer               <PATH>      tokenizer path (required)
-    \\--model                   <PATH>      model path (required)
+    \\--tokenizer               <PATH>      tokenizer.json path (required)
+    \\--model                   <PATH>      model.safetensors path (required)
+    \\--config                  <PATH>      config.json path (required)
+    \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192)
 );
 
 /// CLI parameter parsers
@@ -25,15 +27,16 @@ fn parseBool(in: []const u8) error{}!bool {
 }
 
 /// Configuration structure for the application
-pub const Config = struct {
+pub const AppConfig = struct {
     port: u16,
-    tokenizer: []const u8,
-    model: []const u8,
+    tokenizer_path: []const u8,
+    safetensors_path: []const u8,
+    seq_len: i64,
 };
 
 /// Parse command line arguments into configuration
 // TODO: Unit test
-pub fn parseConfig(allocator: std.mem.Allocator) !Config {
+pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
     const stderr = std.io.getStdErr().writer();
 
     // Parse command line arguments
@@ -66,21 +69,33 @@ pub fn parseConfig(allocator: std.mem.Allocator) !Config {
         return error.MissingModel;
     };
 
+    const config_path = cli.args.model orelse {
+        log.err("Missing required parameter: --model\n", .{});
+        try printHelp();
+        return error.MissingConfig;
+    };
+
     // Validate file paths
     if (!validateFilePath(tokenizer_path)) {
-        log.err("Invalid tokenizer path: {s}\n", .{tokenizer_path});
+        log.err("Invalid tokenizer.json path: {s}\n", .{tokenizer_path});
         return error.InvalidTokenizerPath;
     }
 
     if (!validateFilePath(model_path)) {
-        log.err("Invalid model path: {s}\n", .{model_path});
+        log.err("Invalid model.safetensors path: {s}\n", .{model_path});
         return error.InvalidModelPath;
     }
 
-    return Config{
+    if (!validateFilePath(config_path)) {
+        log.err("Invalid config.json path: {s}\n", .{config_path});
+        return error.InvalidConfigPath;
+    }
+
+    return AppConfig{
         .port = @intCast(cli.args.port orelse 3000),
-        .tokenizer = tokenizer_path,
-        .model = model_path,
+        .tokenizer_path = tokenizer_path,
+        .safetensors_path = model_path,
+        .seq_len = @as(i64, @intCast(cli.args.@"seq-len" orelse 256)),
     };
 }
 
@@ -97,7 +112,7 @@ fn validateFilePath(path: []const u8) bool {
 }
 
 /// Print CLI usage help
-pub fn printHelp() !void {
+fn printHelp() !void {
     const stderr = std.io.getStdErr().writer();
     try stderr.print("usage: ", .{});
     try clap.usage(stderr, clap.Help, &cli_params);
