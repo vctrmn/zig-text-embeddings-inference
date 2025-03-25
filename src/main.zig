@@ -13,6 +13,10 @@ const log = std.log.scoped(.app);
 
 pub const std_options: std.Options = .{
     .log_level = .info,
+    .log_scope_levels = &[_]std.log.ScopeLevel{
+        .{ .scope = .zml, .level = .warn },
+        .{ .scope = .@"zml/module", .level = .warn },
+    },
     .logFn = asynk.logFn(std.log.defaultLog),
 };
 
@@ -49,48 +53,61 @@ pub fn asyncMain() !void {
     var context = try zml.Context.init();
     defer context.deinit();
 
-    // Auto-select acceleration_platform
-    const acceleration_platform = context.autoPlatform(.{});
-    context.printAvailablePlatforms(acceleration_platform);
+    // Auto-select platform (cpu, cuda, rocm..)
+    const platform = context.autoPlatform(.{});
+    context.printAvailablePlatforms(platform);
 
-    // Create arena memory for model resources (shapes and weights)
+    // Create arena memory allocator for model resources (shapes and weights)
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
     const model_allocator = arena_state.allocator();
 
     // Load tokenizer config from tokenizer.json
+    log.info("\tLoading tokenizer from {s}", .{app_config.tokenizer_path});
     var tokenizer = try zml.tokenizer.Tokenizer.fromFile(model_allocator, app_config.tokenizer_path);
     defer tokenizer.deinit();
-    log.info("✅\tLoaded tokenizer from {s}", .{app_config.tokenizer_path});
 
-    // Step 1 - Open the model file and detect its format (here .safetensors)
-    var model_tensor_store = try zml.aio.detectFormatAndOpen(allocator, app_config.safetensors_path);
-    defer model_tensor_store.deinit();
+    // Step 1 - Detect the model file format (here .safetensors) and open it. It creates a buffers store (with shapes ?)
+    var load_timer = try std.time.Timer.start();
+    var model_buffers_store = try zml.aio.detectFormatAndOpen(allocator, app_config.safetensors_path);
+    defer model_buffers_store.deinit();
 
-    // Step 2 - Initialize model struct with Tensors using model_tensor_store
-    var model_instance = try zml.aio.populateModel(ModernBertModel, model_allocator, model_tensor_store);
+    // Step 2 - Initialize model struct with Tensors
+    // It creates a Model struct with Tensor fields from BufferStore loaded shapes ?
+    var model_instance = try zml.aio.populateModel(ModernBertModel, model_allocator, model_buffers_store);
     model_instance.init(modernbert_options);
 
-    // Step 3 - Transfer model weights from host to accelerator (acceleration_platform) memory
-    log.info("\tLoading weights to {s} memory", .{@tagName(acceleration_platform.target)});
-    var model_buffers = try zml.aio.loadBuffers(ModernBertModel, .{modernbert_options}, model_tensor_store, model_allocator, acceleration_platform);
-    defer zml.aio.unloadBuffers(&model_buffers);
-
-    // Define the expected input tensors dimensiosn for the model
+    // Define the expected input tensors dimensiosn for the model (this is metadata only, no memory yet allocated)
     const input_shape = zml.Shape.init(.{ .b = 1, .s = app_config.seq_len }, .u32);
 
-    // Compile the model to platform-specific executable
-    log.info("\tCompiling ModernBERT model...", .{});
+    // Step 3 - Compile the model to a platform-specific executable
+    log.info("\tCompiling model for {s}", .{@tagName(platform.target)});
+    var compile_timer = try std.time.Timer.start();
+
+    // Start asynchronous compilation
     var fut_mod = try asynk.asyncc(zml.compile, .{
         allocator,
         ModernBertModel.forward,
         .{modernbert_options},
         .{input_shape},
-        model_tensor_store,
-        acceleration_platform,
+        model_buffers_store,
+        platform,
     });
-    var bert_module = (try fut_mod.awaitt()).prepare(model_buffers);
-    defer bert_module.deinit();
+
+    // Step 4 - Transfer model weights from host to platform/accelerator memory (in parallel to compilation)
+    log.info("\tLoading weights to {s} memory", .{@tagName(platform.target)});
+    var model_buffers = try zml.aio.loadBuffers(ModernBertModel, .{modernbert_options}, model_buffers_store, model_allocator, platform);
+    defer zml.aio.unloadBuffers(&model_buffers);
+
+    // Step 5 - Wait for compilation + bind weights (model_buffers)
+    var compiled_model = try fut_mod.awaitt();
+    var model_executable = compiled_model.prepare(model_buffers);
+    defer model_executable.deinit();
+
+    log.info("✅\tModel ready: weights loaded in {d:.3}s, model compiled in {d:.3}s", .{
+        load_timer.read() / std.time.ns_per_ms,
+        compile_timer.read() / std.time.ns_per_ms,
+    });
 
     // Create HTTP server with default 404 handler
     var server = zap.Endpoint.Listener.init(allocator, .{
