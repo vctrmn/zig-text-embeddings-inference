@@ -49,51 +49,48 @@ pub fn asyncMain() !void {
     var context = try zml.Context.init();
     defer context.deinit();
 
-    // Auto-select platform
-    const platform = context.autoPlatform(.{});
-    context.printAvailablePlatforms(platform);
+    // Auto-select acceleration_platform
+    const acceleration_platform = context.autoPlatform(.{});
+    context.printAvailablePlatforms(acceleration_platform);
 
     // Create arena memory for model resources (shapes and weights)
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
-    const model_arena = arena_state.allocator();
+    const model_allocator = arena_state.allocator();
 
     // Load tokenizer config from tokenizer.json
-    var tokenizer = try zml.tokenizer.Tokenizer.fromFile(model_arena, app_config.tokenizer_path);
+    var tokenizer = try zml.tokenizer.Tokenizer.fromFile(model_allocator, app_config.tokenizer_path);
     defer tokenizer.deinit();
     log.info("✅\tLoaded tokenizer from {s}", .{app_config.tokenizer_path});
+
+    // Step 1 - Open the model file and detect its format (here .safetensors)
+    var model_tensor_store = try zml.aio.detectFormatAndOpen(allocator, app_config.safetensors_path);
+    defer model_tensor_store.deinit();
+
+    // Step 2 - Initialize model struct with Tensors using model_tensor_store
+    var model_instance = try zml.aio.populateModel(ModernBertModel, model_allocator, model_tensor_store);
+    model_instance.init(modernbert_options);
+
+    // Step 3 - Transfer model weights from host to accelerator (acceleration_platform) memory
+    log.info("\tLoading weights to {s} memory", .{@tagName(acceleration_platform.target)});
+    var model_buffers = try zml.aio.loadBuffers(ModernBertModel, .{modernbert_options}, model_tensor_store, model_allocator, acceleration_platform);
+    defer zml.aio.unloadBuffers(&model_buffers);
 
     // Define the expected input tensors dimensiosn for the model
     const input_shape = zml.Shape.init(.{ .b = 1, .s = app_config.seq_len }, .u32);
 
-    // Step 1 - Open the model file and detect its format (here .safetensors)
-    var tensor_store = try zml.aio.detectFormatAndOpen(allocator, app_config.safetensors_path);
-    defer tensor_store.deinit();
-
-    // Step 2 - Initialize model (populateModel) instance
-    var model_instance = try zml.aio.populateModel(ModernBertModel, model_arena, tensor_store);
-    model_instance.init(modernbert_options);
-
-    // Step 3 - Transfer model weights from host to accelerator (platform) memory
-    log.info("\tLoading ModernBERT weights from {?s}...", .{app_config.safetensors_path});
-    var timer = try std.time.Timer.start();
-    var bert_weights = try zml.aio.loadBuffers(ModernBertModel, .{modernbert_options}, tensor_store, model_arena, platform);
-    defer zml.aio.unloadBuffers(&bert_weights);
-    log.info("✅\tLoaded weights in {d}ms", .{timer.read() / std.time.ns_per_ms});
-
-    // Compile the model
+    // Compile the model to platform-specific executable
     log.info("\tCompiling ModernBERT model...", .{});
     var fut_mod = try asynk.asyncc(zml.compile, .{
         allocator,
         ModernBertModel.forward,
         .{modernbert_options},
         .{input_shape},
-        tensor_store,
-        platform,
+        model_tensor_store,
+        acceleration_platform,
     });
-    var bert_module = (try fut_mod.awaitt()).prepare(bert_weights);
+    var bert_module = (try fut_mod.awaitt()).prepare(model_buffers);
     defer bert_module.deinit();
-    log.info("✅\tLoaded weights and compiled model in {d}ms", .{timer.read() / std.time.ns_per_ms});
 
     // Create HTTP server with default 404 handler
     var server = zap.Endpoint.Listener.init(allocator, .{
@@ -111,7 +108,7 @@ pub fn asyncMain() !void {
 
     // Start HTTP server
     try server.listen();
-    log.info("✅\tServer listening on localhost:{d}", .{app_config.port});
+    log.info("✅\tServer listening on http://localhost:{d}", .{app_config.port});
     log.info("📝\tExample usage: curl -X POST http://localhost:{d}/v1/embeddings -H \"Content-Type: application/json\" -d '{{\"input\": \"Here is a sentence to embed as a vector\"}}'", .{app_config.port});
 
     // Start worker threads
