@@ -9,7 +9,7 @@ const cli_params = clap.parseParamsComptime(
     \\--port                    <UINT>      port to listen on (default: 3000)
     \\--tokenizer               <PATH>      tokenizer.json path (required)
     \\--model                   <PATH>      model.safetensors path (required)
-    \\--config                  <PATH>      config.json path (required)
+    //    \\--config                  <PATH>      config.json path (required)
     \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192)
 );
 
@@ -69,11 +69,11 @@ pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
         return error.MissingModel;
     };
 
-    const config_path = cli.args.model orelse {
-        log.err("Missing required parameter: --model\n", .{});
-        try printHelp();
-        return error.MissingConfig;
-    };
+    // const config_path = cli.args.config orelse {
+    //     log.err("Missing required parameter: --config\n", .{});
+    //     try printHelp();
+    //     return error.MissingConfig;
+    // };
 
     // Validate file paths
     if (!validateFilePath(tokenizer_path)) {
@@ -86,10 +86,10 @@ pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
         return error.InvalidModelPath;
     }
 
-    if (!validateFilePath(config_path)) {
-        log.err("Invalid config.json path: {s}\n", .{config_path});
-        return error.InvalidConfigPath;
-    }
+    // if (!validateFilePath(config_path)) {
+    //     log.err("Invalid config.json path: {s}\n", .{config_path});
+    //     return error.InvalidConfigPath;
+    // }
 
     return AppConfig{
         .port = @intCast(cli.args.port orelse 3000),
