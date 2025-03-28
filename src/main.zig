@@ -104,6 +104,7 @@ pub fn asyncMain() !void {
     var model_executable = compiled_model.prepare(model_buffers);
     defer model_executable.deinit();
 
+    log.info("\tSequence length: {d}", .{app_config.seq_len});
     log.info("✅\tModel ready: weights loaded in {d:.3}s, model compiled in {d:.3}s", .{
         load_timer.read() / std.time.ns_per_ms,
         compile_timer.read() / std.time.ns_per_ms,

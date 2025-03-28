@@ -98,9 +98,6 @@ pub const ModernBertModel = struct {
         const token_embeddings: Tensor = self.forward(input_ids);
         const attn_mask: Tensor = input_ids.cmp(.NE, Tensor.scalar(self.options.pad_token_id, input_ids.dtype())).convert(.f32);
 
-        log.info("token_embeddings: {}", .{token_embeddings});
-        log.info("attn_mask: {}", .{attn_mask});
-
         // .b, .s => .b, .s, .d
         // Create a 3D mask and broadcast to embeddings
         const mask_3d = attn_mask.reshape(.{ attn_mask.dim(.b), attn_mask.dim(.s), 1 });

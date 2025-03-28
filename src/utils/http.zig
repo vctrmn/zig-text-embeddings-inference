@@ -33,9 +33,9 @@ pub fn sendJsonResponse(request: zap.Request, data: anytype, status: zap.StatusC
     }
 }
 
-/// Get a thread-local buffer for JSON serialization
+/// I am totally unsure of this.
+/// the previous content is overwritten on each call ?
 fn getJsonBuffer() *[MAX_JSON_RESPONSE_SIZE]u8 {
-    // Using thread-local storage to avoid repeated allocations
     const T = struct {
         var buffer: [MAX_JSON_RESPONSE_SIZE]u8 = undefined;
     };

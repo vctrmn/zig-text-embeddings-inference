@@ -9,7 +9,7 @@ const cli_params = clap.parseParamsComptime(
     \\--port                    <UINT>      port to listen on (default: 3000)
     \\--tokenizer               <PATH>      tokenizer.json path (required)
     \\--model                   <PATH>      model.safetensors path (required)
-    //    \\--config                  <PATH>      config.json path (required)
+    //TODO:    \\--config                  <PATH>      config.json path (required)
     \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192)
 );
 
