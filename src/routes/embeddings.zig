@@ -40,9 +40,10 @@ const EmbeddingResult = struct {
 pub const EmbeddingsEndpoint = struct {
     allocator: std.mem.Allocator,
     tokenizer: zml.tokenizer.Tokenizer,
-    model_instance: zml.ModuleExe(ModernBertModel.forward),
+    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
     seq_len: i64,
     route: zap.Endpoint = undefined,
+    model_name: []const u8,
     // I am not sure to understand this mutex thing :
     // https://github.com/zigzap/zap/blob/3b06a336ef27e5ffe04075109d67e309b83a337a/examples/endpoint/users.zig#
     mutex: std.Thread.Mutex = .{},
@@ -50,7 +51,7 @@ pub const EmbeddingsEndpoint = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         tokenizer: zml.tokenizer.Tokenizer,
-        model_instance: zml.ModuleExe(ModernBertModel.forward),
+        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
         seq_len: i64,
     ) !*EmbeddingsEndpoint {
         const handler = try allocator.create(EmbeddingsEndpoint);
@@ -59,6 +60,7 @@ pub const EmbeddingsEndpoint = struct {
             .tokenizer = tokenizer,
             .model_instance = model_instance,
             .seq_len = seq_len,
+            .model_name = "nomic-ai/modernbert-embed-base",
             .mutex = .{},
         };
 
@@ -120,7 +122,7 @@ pub const EmbeddingsEndpoint = struct {
         defer self.mutex.unlock();
 
         // Generate embedding
-        self.generateEmbedding(request_allocator, embeddings_request) catch |err| {
+        const embedding_result = self.generateEmbedding(request_allocator, embeddings_request) catch |err| {
             log.err("Error generating embedding: {}", .{err});
             http_utils.sendErrorResponse(request, "Error generating embedding", .internal_server_error);
             return;
@@ -128,13 +130,30 @@ pub const EmbeddingsEndpoint = struct {
 
         const processing_time = std.time.milliTimestamp() - start_time;
 
-        _ = processing_time;
-        request.setStatus(.no_content);
-        request.markAsFinished(true);
+        const embedding_data = EmbeddingData{
+            .embedding = embedding_result.embedding,
+            .index = 0,
+        };
+
+        const response_data = [_]EmbeddingData{embedding_data};
+
+        const usage = UsageOutput{
+            .prompt_tokens = embedding_result.token_count,
+            .total_tokens = embedding_result.token_count,
+            .processing_time_ms = @intCast(processing_time),
+        };
+
+        const response = EmbeddingsResponse{
+            .data = &response_data,
+            .model = self.model_name,
+            .usage = usage,
+        };
+
+        http_utils.sendJsonResponse(request, response, .ok);
     }
 
     /// Generate embedding for input text
-    fn generateEmbedding(self: *EmbeddingsEndpoint, allocator: std.mem.Allocator, request: EmbeddingsRequest) !void {
+    fn generateEmbedding(self: *EmbeddingsEndpoint, allocator: std.mem.Allocator, request: EmbeddingsRequest) !EmbeddingResult {
         var input_text: []const u8 = undefined;
         var prefixed_text: []u8 = undefined;
 
@@ -149,15 +168,11 @@ pub const EmbeddingsEndpoint = struct {
         }
         log.info("Tokenizing text: '{s}'", .{input_text});
 
-        // Tokenize input
-        var encoder = try self.tokenizer.encoder();
-        defer encoder.deinit();
-
         const pad_token = self.tokenizer.tokenToId("[PAD]") orelse return error.NoSuchToken;
 
         // Tokenize input text
-        const tokens = try encoder.encode(input_text);
-        log.info("Toknenized text: {any}", .{tokens});
+        const tokens = try tokenizeText(allocator, self.tokenizer, input_text);
+        defer allocator.free(tokens);
 
         // Prepare input tensors
         const input_tokens = try prepareModelInputs(allocator, tokens, self.seq_len, pad_token);
@@ -167,7 +182,17 @@ pub const EmbeddingsEndpoint = struct {
         const input_shape = zml.Shape.init(.{ .b = 1, .s = self.seq_len }, .u32);
         const input_ids_tensor = try zml.Buffer.fromSlice(self.model_instance.platform(), input_shape.dims(), input_tokens);
         defer input_ids_tensor.deinit();
-        log.info("input_ids_tensor: {}", .{input_ids_tensor});
+
+        // Model inference (retrieve indices)
+        var model_output = self.model_instance.call(.{input_ids_tensor});
+        defer zml.aio.unloadBuffers(&model_output);
+        const cpu_result = try model_output.toHostAlloc(allocator);
+        const embedding = try allocator.dupe(f32, cpu_result.items(f32));
+
+        return EmbeddingResult{
+            .embedding = embedding,
+            .token_count = tokens.len,
+        };
     }
 };
 
@@ -193,4 +218,20 @@ fn prepareModelInputs(allocator: std.mem.Allocator, tokens: []const u32, seq_len
     }
 
     return input_ids;
+}
+
+/// Tokenize text for ModernBERT input
+fn tokenizeText(allocator: std.mem.Allocator, tokenizer: zml.tokenizer.Tokenizer, text: []const u8) ![]const u32 {
+    var tokens = std.ArrayList(u32).init(allocator);
+    var encoder = try tokenizer.encoder();
+    defer encoder.deinit();
+
+    const bos = tokenizer.tokenToId("[CLS]") orelse return error.NoSuchToken;
+    const eos = tokenizer.tokenToId("[SEP]") orelse return error.NoSuchToken;
+
+    try tokens.append(bos);
+    try tokens.appendSlice(try encoder.encode(text));
+    try tokens.append(eos);
+
+    return tokens.toOwnedSlice();
 }

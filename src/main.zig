@@ -25,7 +25,7 @@ pub const std_options: std.Options = .{
 const modernbert_options = ModernBertOptions{
     .pad_token_id = 50283,
     .num_attention_heads = 12,
-    .tie_word_embeddings = true,
+    .tie_word_embeddings = false,
     .local_attention = 128,
 };
 
@@ -87,7 +87,7 @@ pub fn asyncMain() !void {
     // Start asynchronous compilation
     var fut_mod = try asynk.asyncc(zml.compile, .{
         allocator,
-        ModernBertModel.forward,
+        ModernBertModel.forwardEmbeddings,
         .{modernbert_options},
         .{input_shape},
         model_buffers_store,
@@ -132,7 +132,7 @@ pub fn asyncMain() !void {
     // Start HTTP server
     try server.listen();
     log.info("✅\tServer listening on http://localhost:{d}", .{app_config.port});
-    log.info("📝\tExample usage: curl -X POST http://localhost:{d}/v1/embeddings -H \"Content-Type: application/json\" -d '{{\"input\": \"Here is a sentence to embed as a vector\"}}'", .{app_config.port});
+    log.info("📝\tExample usage: curl -X POST http://localhost:{d}/v1/embeddings -H \"Content-Type: application/json\" -d '{{\"input\": \"Machine learning is a fascinating field\"}}'", .{app_config.port});
 
     // Start worker threads
     zap.start(.{

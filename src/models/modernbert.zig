@@ -71,7 +71,7 @@ pub const ModernBertModel = struct {
     }
 
     pub fn forward(self: ModernBertModel, input_ids: Tensor) Tensor {
-        var hidden_states: Tensor = zml.call(self.embeddings, .forward, .{input_ids}).withTags(.{ .b, .src, .d });
+        var hidden_states: Tensor = zml.call(self.embeddings, .forward, .{input_ids}).withTags(.{ .b, .s, .d });
 
         const global_mask = globalAttnMask(input_ids, hidden_states.dtype(), self.options.pad_token_id);
         const local_mask = localAttnMask(global_mask, self.options.local_attention);
@@ -89,6 +89,35 @@ pub const ModernBertModel = struct {
         hidden_states = zml.call(self.final_norm, .forward, .{hidden_states});
 
         return hidden_states;
+    }
+
+    pub fn forwardEmbeddings(self: ModernBertModel, input_ids: Tensor) Tensor {
+        // Buffer({b=1,s=256,d=768,f32})
+
+        // STEP 1 : input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        const token_embeddings: Tensor = self.forward(input_ids);
+        const attn_mask: Tensor = input_ids.cmp(.NE, Tensor.scalar(self.options.pad_token_id, input_ids.dtype())).convert(.f32);
+
+        log.info("token_embeddings: {}", .{token_embeddings});
+        log.info("attn_mask: {}", .{attn_mask});
+
+        // .b, .s => .b, .s, .d
+        // Create a 3D mask and broadcast to embeddings
+        const mask_3d = attn_mask.reshape(.{ attn_mask.dim(.b), attn_mask.dim(.s), 1 });
+        const input_mask_expanded = mask_3d.broad(token_embeddings.shape());
+
+        // STEP 2 : return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        const sum_embeddings = token_embeddings.mul(input_mask_expanded).sum(.s);
+        const sum_mask = input_mask_expanded.sum(.s);
+
+        // Create min and max tensors for clamping
+        const min_value = Tensor.scalar(1e-9, sum_mask.dtype());
+        const max_value = Tensor.constant(.{}, sum_mask.dtype().maxValue());
+        const clamped_sum_mask = sum_mask.clamp(min_value, max_value);
+
+        const mean_embeddings = sum_embeddings.div(clamped_sum_mask);
+
+        return zml.nn.normalizeL2(mean_embeddings, 1e-12);
     }
 
     /// Find [PAD] tokens in inputs, and assign them a -inf attention mask.
