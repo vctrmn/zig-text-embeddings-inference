@@ -30,7 +30,6 @@ chmod +x /usr/local/bin/bazel
 
 ### Build and run the server
 
-⚠️ WIP ⚠️
 ```bash
 bazel run -c opt //:ModernBERT-large
 ```
@@ -38,3 +37,11 @@ bazel run -c opt //:ModernBERT-large
 ```bash
 bazel run -c opt --@zml//runtimes:cuda=true //:ModernBERT-large
 ```
+
+## Available Models
+
+| Model ID | Description | Status |
+|----------|-------------|--------|
+| `ModernBERT-large` | Answer.AI's ModernBERT large model | ✅ Available |
+| `nomic-ai/modernbert-embed-base` | A ModernBERT-based embedding model from Nomic AI | ⚠️ In Progress |
+| `Alibaba-NLP/gte-modernbert-base` | An improved GTE (General Text Embeddings) variant based on ModernBERT | ⚠️ In Progress |

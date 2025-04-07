@@ -14,10 +14,10 @@ const log = std.log.scoped(.app);
 
 pub const std_options: std.Options = .{
     .log_level = .info,
-    //    .log_scope_levels = &[_]std.log.ScopeLevel{
-    //        .{ .scope = .zml, .level = .warn },
-    //        .{ .scope = .@"zml/module", .level = .warn },
-    //    },
+    .log_scope_levels = &[_]std.log.ScopeLevel{
+        .{ .scope = .zml, .level = .warn },
+        .{ .scope = .@"zml/module", .level = .warn },
+    },
     .logFn = asynk.logFn(std.log.defaultLog),
 };
 
