@@ -92,26 +92,19 @@ pub const ModernBertModel = struct {
     }
 
     pub fn forwardEmbeddingsCLS(self: ModernBertModel, input_ids: Tensor) Tensor {
-        // Get the model outputs (all token embeddings)
         const token_embeddings: Tensor = self.forward(input_ids);
 
-        // Extract just the CLS token (first token) embedding
-        // token_embeddings[:,0,:]
-        const cls_embedding = token_embeddings
-            .slice(&[_]Tensor.Slice{
-                .{}, // Full slice on batch dimension
-                .{ .start = 0, .end = 1 }, // Just the CLS token
-                .{}, // Full slice on embedding dimension
-            })
-            .squeeze(1);
+        unreachable("CLS token extraction not implemented");
 
-        // No L2 normalization: match hf text-embeddings-inf behavior
-        return cls_embedding;
+        // Extract the CLS token (first token) embedding
+        // token_embeddings[:,0,:]
+        // const cls_embedding = token_embeddings.slice1d ?
+
+        // No normalization: match hf text-embeddings-inf behavior
+        return token_embeddings;
     }
 
     pub fn forwardEmbeddingsMeanPooling(self: ModernBertModel, input_ids: Tensor) Tensor {
-        // Buffer({b=1,s=256,d=768,f32})
-
         // STEP 1 : input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         const token_embeddings: Tensor = self.forward(input_ids);
         const attn_mask: Tensor = input_ids.cmp(.NE, Tensor.scalar(self.options.pad_token_id, input_ids.dtype())).convert(.f32);

@@ -40,7 +40,7 @@ const EmbeddingResult = struct {
 pub const EmbeddingsEndpoint = struct {
     allocator: std.mem.Allocator,
     tokenizer: zml.tokenizer.Tokenizer,
-    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsCLS),
+    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsMeanPooling),
     seq_len: i64,
     route: zap.Endpoint = undefined,
     model_name: []const u8,
@@ -51,7 +51,7 @@ pub const EmbeddingsEndpoint = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         tokenizer: zml.tokenizer.Tokenizer,
-        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsCLS),
+        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsMeanPooling),
         seq_len: i64,
     ) !*EmbeddingsEndpoint {
         const handler = try allocator.create(EmbeddingsEndpoint);

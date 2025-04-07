@@ -23,6 +23,7 @@ cc_binary(
         # "--config=$(location @nomic-ai-modernbert-embed-base//:config)",
         "--model=$(location @nomic-ai-modernbert-embed-base//:model.safetensors)",
         "--tokenizer=$(location @nomic-ai-modernbert-embed-base//:tokenizer)",
+        "--pooling=mean",
     ],
     data = [
         "@nomic-ai-modernbert-embed-base//:config",
@@ -38,6 +39,7 @@ cc_binary(
         # "--config=$(location @answerdotai-ModernBERT-large//:config)",
         "--model=$(location @answerdotai-ModernBERT-large//:model.safetensors)",
         "--tokenizer=$(location @answerdotai-ModernBERT-large//:tokenizer)",
+        "--pooling=mean",
     ],
     data = [
         "@answerdotai-ModernBERT-large//:config",

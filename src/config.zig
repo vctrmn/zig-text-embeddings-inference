@@ -11,6 +11,7 @@ const cli_params = clap.parseParamsComptime(
     \\--model                   <PATH>      model.safetensors path (required)
     //TODO:    \\--config                  <PATH>      config.json path (required)
     \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192 for modernbert)
+    \\--pooling                 <STRING>    control the pooling method (possible values: ['mean', 'cls', 'last-token'] default: mean)
 );
 
 /// CLI parameter parsers
@@ -32,6 +33,21 @@ pub const AppConfig = struct {
     tokenizer_path: []const u8,
     safetensors_path: []const u8,
     seq_len: i64,
+    pooling: PoolingMethod,
+};
+
+/// Enum for pooling methods
+pub const PoolingMethod = enum {
+    mean,
+    cls,
+    @"last-token",
+
+    pub fn fromString(str: []const u8) !PoolingMethod {
+        if (std.mem.eql(u8, str, "mean")) return .mean;
+        if (std.mem.eql(u8, str, "cls")) return .cls;
+        if (std.mem.eql(u8, str, "last-token")) return .@"last-token";
+        return error.InvalidPoolingMethod;
+    }
 };
 
 /// Parse command line arguments into configuration
@@ -91,11 +107,19 @@ pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
     //     return error.InvalidConfigPath;
     // }
 
+    const pooling_str = cli.args.pooling orelse "mean";
+    const pooling = PoolingMethod.fromString(pooling_str) catch {
+        log.err("Invalid pooling method: {s}. Valid options are 'mean', 'cls', or 'last-token'.\n", .{pooling_str});
+        try printHelp();
+        return error.InvalidPoolingMethod;
+    };
+
     return AppConfig{
         .port = @intCast(cli.args.port orelse 3000),
         .tokenizer_path = tokenizer_path,
         .safetensors_path = model_path,
         .seq_len = @as(i64, @intCast(cli.args.@"seq-len" orelse 256)),
+        .pooling = pooling,
     };
 }
 

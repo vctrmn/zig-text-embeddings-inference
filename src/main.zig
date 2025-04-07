@@ -88,7 +88,7 @@ pub fn asyncMain() !void {
     // Start asynchronous compilation
     var fut_mod = try asynk.asyncc(zml.compileWithPrefix, .{
         allocator,
-        ModernBertModel.forwardEmbeddingsCLS,
+        ModernBertModel.forwardEmbeddingsMeanPooling,
         .{modernbert_options},
         .{input_shape},
         model_buffers_store,
@@ -135,7 +135,7 @@ pub fn asyncMain() !void {
     // Start HTTP server
     try server.listen();
     log.info("✅\tServer listening on http://localhost:{d}", .{app_config.port});
-    log.info("📝\tExample usage: curl -X POST http://localhost:{d}/v1/embeddings -H \"Content-Type: application/json\" -d '{{\"input\": \"Machine learning is a fascinating field\"}}'", .{app_config.port});
+    log.info("📝\tExample usage: curl -X POST http://localhost:{d}/v1/embeddings -H \"Content-Type: application/json\" -d '{{\"input\": \"What is Deep Learning?\"}}'", .{app_config.port});
 
     // Start worker threads
     zap.start(.{
