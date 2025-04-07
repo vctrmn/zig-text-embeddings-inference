@@ -88,7 +88,7 @@ pub fn asyncMain() !void {
     // Start asynchronous compilation
     var fut_mod = try asynk.asyncc(zml.compileWithPrefix, .{
         allocator,
-        ModernBertModel.forwardEmbeddingsMeanPooling,
+        ModernBertModel.forwardEmbeddings,
         .{modernbert_options},
         .{input_shape},
         model_buffers_store,
@@ -107,6 +107,7 @@ pub fn asyncMain() !void {
     defer model_executable.deinit();
 
     log.info("\tSequence length: {d}", .{app_config.seq_len});
+    log.info("\tPooling method: {s}", .{@tagName(app_config.pooling)});
     log.info("✅\tModel ready: weights loaded in {d:.3}s, model compiled in {d:.3}s", .{
         load_timer.read() / std.time.ns_per_ms,
         compile_timer.read() / std.time.ns_per_ms,
@@ -128,6 +129,7 @@ pub fn asyncMain() !void {
         tokenizer,
         model_executable,
         app_config.seq_len,
+        app_config.pooling,
     );
     defer embeddings_endpoint.deinit();
     try server.register(embeddings_endpoint.getRoute());

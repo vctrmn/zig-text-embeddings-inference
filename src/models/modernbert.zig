@@ -1,5 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.modernbert);
+const PoolingMethod = @import("../config.zig").PoolingMethod;
 
 const asynk = @import("async");
 const stdx = @import("stdx");
@@ -91,17 +92,18 @@ pub const ModernBertModel = struct {
         return hidden_states;
     }
 
-    pub fn forwardEmbeddingsCLS(self: ModernBertModel, input_ids: Tensor) Tensor {
-        const token_embeddings: Tensor = self.forward(input_ids);
-
-        unreachable("CLS token extraction not implemented");
-
-        // Extract the CLS token (first token) embedding
-        // token_embeddings[:,0,:]
-        // const cls_embedding = token_embeddings.slice1d ?
-
-        // No normalization: match hf text-embeddings-inf behavior
-        return token_embeddings;
+    /// Forward pass for embeddings
+    pub fn forwardEmbeddings(self: ModernBertModel, input_ids: Tensor, pooling_method: PoolingMethod) Tensor {
+        switch (pooling_method) {
+            .mean => return self.forwardEmbeddingsMeanPooling(input_ids),
+            .cls => {
+                unreachable("CLS token extraction not implemented");
+            },
+            .@"last-token" => {
+                unreachable("Last token extraction not implemented");
+            },
+            else => unreachable("Unsupported pooling method"),
+        }
     }
 
     pub fn forwardEmbeddingsMeanPooling(self: ModernBertModel, input_ids: Tensor) Tensor {

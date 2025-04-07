@@ -2,6 +2,7 @@ const std = @import("std");
 const zap = @import("zap");
 const zml = @import("zml");
 const http_utils = @import("../utils/http.zig");
+const PoolingMethod = @import("../config.zig").PoolingMethod;
 const ModernBertModel = @import("../models/modernbert.zig").ModernBertModel;
 
 const log = std.log.scoped(.embeddings);
@@ -40,10 +41,11 @@ const EmbeddingResult = struct {
 pub const EmbeddingsEndpoint = struct {
     allocator: std.mem.Allocator,
     tokenizer: zml.tokenizer.Tokenizer,
-    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsMeanPooling),
+    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
     seq_len: i64,
     route: zap.Endpoint = undefined,
     model_name: []const u8,
+    pooling_method: PoolingMethod,
     // I am not sure to understand this mutex thing :
     // https://github.com/zigzap/zap/blob/3b06a336ef27e5ffe04075109d67e309b83a337a/examples/endpoint/users.zig#
     mutex: std.Thread.Mutex = .{},
@@ -51,8 +53,9 @@ pub const EmbeddingsEndpoint = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         tokenizer: zml.tokenizer.Tokenizer,
-        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsMeanPooling),
+        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
         seq_len: i64,
+        pooling_method: PoolingMethod,
     ) !*EmbeddingsEndpoint {
         const handler = try allocator.create(EmbeddingsEndpoint);
         handler.* = .{
@@ -61,6 +64,7 @@ pub const EmbeddingsEndpoint = struct {
             .model_instance = model_instance,
             .seq_len = seq_len,
             .model_name = "answerdotai/ModernBERT-large",
+            .pooling_method = pooling_method,
             .mutex = .{},
         };
 
