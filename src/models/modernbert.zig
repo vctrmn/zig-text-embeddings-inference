@@ -102,7 +102,6 @@ pub const ModernBertModel = struct {
             .@"last-token" => {
                 unreachable("Last token extraction not implemented");
             },
-            else => unreachable("Unsupported pooling method"),
         }
     }
 

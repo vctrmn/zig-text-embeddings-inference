@@ -90,7 +90,7 @@ pub fn asyncMain() !void {
         allocator,
         ModernBertModel.forwardEmbeddings,
         .{modernbert_options},
-        .{input_shape},
+        .{ input_shape, app_config.pooling },
         model_buffers_store,
         platform,
         "model",

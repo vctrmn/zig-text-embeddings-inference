@@ -114,6 +114,15 @@ pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
         return error.InvalidPoolingMethod;
     };
 
+    switch (pooling) {
+        .mean => {},
+        .cls, .@"last-token" => {
+            log.err("Pooling method '{s}' is not implemented yet. Please use 'mean' instead.\n", .{@tagName(pooling)});
+            try printHelp();
+            return error.UnsupportedPoolingMethod;
+        },
+    }
+
     return AppConfig{
         .port = @intCast(cli.args.port orelse 3000),
         .tokenizer_path = tokenizer_path,
