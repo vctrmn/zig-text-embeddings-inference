@@ -1,4 +1,5 @@
 load("@aspect_bazel_lib//lib:tar.bzl", "mtree_spec", "tar")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("@zml//bazel:zig.bzl", "zig_cc_binary")
 
 zig_cc_binary(
@@ -6,6 +7,18 @@ zig_cc_binary(
     srcs = glob(
         ["src/**/*.zig"],
     ),
+    main = "src/main.zig",
+    deps = [
+        "@com_github_hejsil_clap//:clap",
+        "@com_github_zigzap_zap//:zap",
+        "@zml//async",
+        "@zml//stdx",
+        "@zml//zml",
+    ],
+)
+
+cc_binary(
+    name = "modernbert-embed-base",
     args = [
         # "--config=$(location @nomic-ai-modernbert-embed-base//:config)",
         "--model=$(location @nomic-ai-modernbert-embed-base//:model.safetensors)",
@@ -16,14 +29,22 @@ zig_cc_binary(
         "@nomic-ai-modernbert-embed-base//:model.safetensors",
         "@nomic-ai-modernbert-embed-base//:tokenizer",
     ],
-    main = "src/main.zig",
-    deps = [
-        "@com_github_hejsil_clap//:clap",
-        "@com_github_zigzap_zap//:zap",
-        "@zml//async",
-        "@zml//stdx",
-        "@zml//zml",
+    deps = [":app_lib"],
+)
+
+cc_binary(
+    name = "ModernBERT-large",
+    args = [
+        # "--config=$(location @answerdotai-ModernBERT-large//:config)",
+        "--model=$(location @answerdotai-ModernBERT-large//:model.safetensors)",
+        "--tokenizer=$(location @answerdotai-ModernBERT-large//:tokenizer)",
     ],
+    data = [
+        "@answerdotai-ModernBERT-large//:config",
+        "@answerdotai-ModernBERT-large//:model.safetensors",
+        "@answerdotai-ModernBERT-large//:tokenizer",
+    ],
+    deps = [":app_lib"],
 )
 
 mtree_spec(

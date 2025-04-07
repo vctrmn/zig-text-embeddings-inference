@@ -29,6 +29,8 @@ use_repo(external_deps, "com_github_zigzap_zap", "com_github_hejsil_clap")
 
 # Huggingface extension
 huggingface = use_extension("@zml//bazel:huggingface.bzl", "huggingface")
+
+# Model: nomic-ai/modernbert-embed-base
 huggingface.model(
     name = "nomic-ai-modernbert-embed-base",
     build_file_content = """\
@@ -57,3 +59,33 @@ filegroup(
     model = "nomic-ai/modernbert-embed-base",
 )
 use_repo(huggingface, "nomic-ai-modernbert-embed-base")
+
+# Model : answerdotai/ModernBERT-large
+huggingface.model(
+    name = "answerdotai-ModernBERT-large",
+    build_file_content = """\
+package(default_visibility = ["//visibility:public"])
+filegroup(
+    name = "model",
+    srcs = ["model.safetensors"],
+)
+
+filegroup(
+    name = "config",
+    srcs = ["config.json"],
+)
+
+filegroup(
+    name = "tokenizer",
+    srcs = ["tokenizer.json"],
+)
+""",
+    commit = "45bb4654a4d5aaff24dd11d4781fa46d39bf8c13",
+    includes = [
+        "config.json",
+        "model.safetensors",
+        "tokenizer.json",
+    ],
+    model = "answerdotai/ModernBERT-large",
+)
+use_repo(huggingface, "answerdotai-ModernBERT-large")
