@@ -29,10 +29,12 @@ chmod +x /usr/local/bin/bazel
 
 
 ### Build and run the server
+
+⚠️ WIP ⚠️
 ```bash
-bazel run -c opt //:app
+bazel run -c opt //:ModernBERT-large
 ```
 
 ```bash
-bazel run -c opt --@zml//runtimes:cuda=true //:app
+bazel run -c opt --@zml//runtimes:cuda=true //:ModernBERT-large
 ```

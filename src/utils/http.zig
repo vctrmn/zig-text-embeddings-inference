@@ -4,7 +4,7 @@ const zap = @import("zap");
 const log = std.log.scoped(.http);
 
 /// Maximum size allowed for JSON responses in bytes
-pub const MAX_JSON_RESPONSE_SIZE = 32 * 1024; // 32KB should be enough for most embeddings
+pub const MAX_JSON_RESPONSE_SIZE = 64 * 1024; // 64KB should be enough for most embeddings sscenarios
 
 /// Error response structure
 pub const ErrorResponse = struct {

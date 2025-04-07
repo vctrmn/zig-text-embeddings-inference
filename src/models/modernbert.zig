@@ -91,7 +91,25 @@ pub const ModernBertModel = struct {
         return hidden_states;
     }
 
-    pub fn forwardEmbeddings(self: ModernBertModel, input_ids: Tensor) Tensor {
+    pub fn forwardEmbeddingsCLS(self: ModernBertModel, input_ids: Tensor) Tensor {
+        // Get the model outputs (all token embeddings)
+        const token_embeddings: Tensor = self.forward(input_ids);
+
+        // Extract just the CLS token (first token) embedding
+        // token_embeddings[:,0,:]
+        const cls_embedding = token_embeddings
+            .slice(&[_]Tensor.Slice{
+                .{}, // Full slice on batch dimension
+                .{ .start = 0, .end = 1 }, // Just the CLS token
+                .{}, // Full slice on embedding dimension
+            })
+            .squeeze(1);
+
+        // No L2 normalization: match hf text-embeddings-inf behavior
+        return cls_embedding;
+    }
+
+    pub fn forwardEmbeddingsMeanPooling(self: ModernBertModel, input_ids: Tensor) Tensor {
         // Buffer({b=1,s=256,d=768,f32})
 
         // STEP 1 : input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()

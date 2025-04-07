@@ -40,7 +40,7 @@ const EmbeddingResult = struct {
 pub const EmbeddingsEndpoint = struct {
     allocator: std.mem.Allocator,
     tokenizer: zml.tokenizer.Tokenizer,
-    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
+    model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsCLS),
     seq_len: i64,
     route: zap.Endpoint = undefined,
     model_name: []const u8,
@@ -51,7 +51,7 @@ pub const EmbeddingsEndpoint = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         tokenizer: zml.tokenizer.Tokenizer,
-        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddings),
+        model_instance: zml.ModuleExe(ModernBertModel.forwardEmbeddingsCLS),
         seq_len: i64,
     ) !*EmbeddingsEndpoint {
         const handler = try allocator.create(EmbeddingsEndpoint);
@@ -60,7 +60,7 @@ pub const EmbeddingsEndpoint = struct {
             .tokenizer = tokenizer,
             .model_instance = model_instance,
             .seq_len = seq_len,
-            .model_name = "nomic-ai/modernbert-embed-base",
+            .model_name = "answerdotai/ModernBERT-large",
             .mutex = .{},
         };
 
@@ -155,17 +155,19 @@ pub const EmbeddingsEndpoint = struct {
     /// Generate embedding for input text
     fn generateEmbedding(self: *EmbeddingsEndpoint, allocator: std.mem.Allocator, request: EmbeddingsRequest) !EmbeddingResult {
         var input_text: []const u8 = undefined;
-        var prefixed_text: []u8 = undefined;
 
-        if (!std.mem.startsWith(u8, request.input, "search_query:") and
-            !std.mem.startsWith(u8, request.input, "search_document:"))
-        {
-            // Create prefixed text
-            prefixed_text = try std.fmt.allocPrint(allocator, "search_query: {s}", .{request.input});
-            input_text = prefixed_text;
-        } else {
-            input_text = request.input;
-        }
+        // var prefixed_text: []u8 = undefined;
+        // if (!std.mem.startsWith(u8, request.input, "search_query:") and
+        //     !std.mem.startsWith(u8, request.input, "search_document:"))
+        // {
+        //     // Create prefixed text
+        //     prefixed_text = try std.fmt.allocPrint(allocator, "search_query: {s}", .{request.input});
+        //     input_text = prefixed_text;
+        // } else {
+        //     input_text = request.input;
+        // }
+
+        input_text = request.input;
         log.info("Tokenizing text: '{s}'", .{input_text});
 
         const pad_token = self.tokenizer.tokenToId("[PAD]") orelse return error.NoSuchToken;

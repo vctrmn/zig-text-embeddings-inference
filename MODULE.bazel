@@ -18,8 +18,8 @@ zig.toolchain(zig_version = "0.14.0")
 # Use ZML repository for the zml bazel_dep
 git_override(
     module_name = "zml",
-    remote = "https://github.com/zml/zml.git",
-    commit = "1bdde64755f123d68cd8e56a150405bef819f2b8",  # master branch @ 31/03/2025
+    remote = "https://github.com/vctrmn/zml.git",
+    commit = "f14c971ca7e32236e3ae12aaf6ce0ff4db0f1158",  # feature/compile-with-prefix branch @ 07/04/2025
 )
 
 # ZAP does not provide bazel integration (no MODULE.bazel / BUILD.bazel),

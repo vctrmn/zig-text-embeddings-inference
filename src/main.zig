@@ -8,15 +8,16 @@ const HealthCheckEndpoint = @import("routes/healthz.zig").HealthCheckEndpoint;
 const EmbeddingsEndpoint = @import("routes/embeddings.zig").EmbeddingsEndpoint;
 const ModernBertModel = @import("models/modernbert.zig").ModernBertModel;
 const ModernBertOptions = @import("models/modernbert.zig").ModernBertOptions;
+const ModernBertForMaskedLM = @import("models/modernbert.zig").ModernBertForMaskedLM;
 
 const log = std.log.scoped(.app);
 
 pub const std_options: std.Options = .{
     .log_level = .info,
-    .log_scope_levels = &[_]std.log.ScopeLevel{
-        .{ .scope = .zml, .level = .warn },
-        .{ .scope = .@"zml/module", .level = .warn },
-    },
+    //    .log_scope_levels = &[_]std.log.ScopeLevel{
+    //        .{ .scope = .zml, .level = .warn },
+    //        .{ .scope = .@"zml/module", .level = .warn },
+    //    },
     .logFn = asynk.logFn(std.log.defaultLog),
 };
 
@@ -24,7 +25,7 @@ pub const std_options: std.Options = .{
 // Model configuration (config.json)
 const modernbert_options = ModernBertOptions{
     .pad_token_id = 50283,
-    .num_attention_heads = 12,
+    .num_attention_heads = 16,
     .tie_word_embeddings = false,
     .local_attention = 128,
 };
@@ -74,7 +75,7 @@ pub fn asyncMain() !void {
 
     // Step 2 - Initialize model struct with Tensors
     // It creates a Model struct with Tensor fields from BufferStore loaded shapes ?
-    var model_instance = try zml.aio.populateModel(ModernBertModel, model_allocator, model_buffers_store);
+    var model_instance = try zml.aio.populateModelWithPrefix(ModernBertModel, model_allocator, model_buffers_store, "model");
     model_instance.init(modernbert_options);
 
     // Define the expected input tensors dimensiosn for the model (this is metadata only, no memory yet allocated)
@@ -85,18 +86,19 @@ pub fn asyncMain() !void {
     var compile_timer = try std.time.Timer.start();
 
     // Start asynchronous compilation
-    var fut_mod = try asynk.asyncc(zml.compile, .{
+    var fut_mod = try asynk.asyncc(zml.compileWithPrefix, .{
         allocator,
-        ModernBertModel.forwardEmbeddings,
+        ModernBertModel.forwardEmbeddingsCLS,
         .{modernbert_options},
         .{input_shape},
         model_buffers_store,
         platform,
+        "model",
     });
 
     // Step 4 - Transfer model weights from host to platform/accelerator memory (in parallel to compilation)
     log.info("\tLoading weights to {s} memory", .{@tagName(platform.target)});
-    var model_buffers = try zml.aio.loadBuffers(ModernBertModel, .{modernbert_options}, model_buffers_store, model_allocator, platform);
+    var model_buffers = try zml.aio.loadBuffersWithPrefix(ModernBertModel, .{modernbert_options}, model_buffers_store, model_allocator, platform, "model");
     defer zml.aio.unloadBuffers(&model_buffers);
 
     // Step 5 - Wait for compilation + bind weights (model_buffers)

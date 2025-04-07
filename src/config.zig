@@ -10,7 +10,7 @@ const cli_params = clap.parseParamsComptime(
     \\--tokenizer               <PATH>      tokenizer.json path (required)
     \\--model                   <PATH>      model.safetensors path (required)
     //TODO:    \\--config                  <PATH>      config.json path (required)
-    \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192)
+    \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192 for modernbert)
 );
 
 /// CLI parameter parsers
