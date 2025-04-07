@@ -10,6 +10,8 @@ bazel_dep(name = "rules_zig", version = "20250314.0-b9739c6")  # Should match ZM
 bazel_dep(name = "zml", version = "0.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "aspect_bazel_lib", version = "2.14.0")
+bazel_dep(name = "rules_oci", version = "2.2.5")
+bazel_dep(name = "platforms", version = "0.0.11")
 
 # Configure Zig toolchain
 zig = use_extension("@rules_zig//zig:extensions.bzl", "zig")
@@ -89,3 +91,14 @@ filegroup(
     model = "answerdotai/ModernBERT-large",
 )
 use_repo(huggingface, "answerdotai-ModernBERT-large")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "distroless_cc_debian12",
+    digest = "sha256:1850aee2ff72864350058d83d681c757d45c885986d15fcca7309b9e5c69f39a",
+    image = "gcr.io/distroless/cc-debian12",
+    platforms = [
+        "linux/amd64",
+    ],
+)
+use_repo(oci, "distroless_cc_debian12", "distroless_cc_debian12_linux_amd64")

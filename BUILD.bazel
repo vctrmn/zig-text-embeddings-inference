@@ -1,8 +1,5 @@
-load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
 load("@aspect_bazel_lib//lib:tar.bzl", "mtree_spec", "tar")
-load("@aspect_bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@rules_cc//cc:defs.bzl", "cc_binary")
-load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
 load("@zml//bazel:zig.bzl", "zig_cc_binary")
 
 zig_cc_binary(
@@ -66,63 +63,54 @@ tar(
     mtree = ":mtree",
 )
 
-expand_template(
-    name = "entrypoint",
-    data = [
-        ":ModernBERT-large",
-        "@answerdotai-ModernBERT-large//:model.safetensors",
-        "@answerdotai-ModernBERT-large//:tokenizer",
-    ],
-    substitutions = {
-        ":weights": "$(rlocationpath @answerdotai-ModernBERT-large//:model.safetensors)",
-        ":tokenizer": "$(rlocationpath @answerdotai-ModernBERT-large//:tokenizer)",
-    },
-    tags = [
-        "no_ci",
-    ],
-    template = [
-        "./{}/ModernBERT-large".format(package_name()),
-        "--weights=./{}/ModernBERT-large.runfiles/:weights".format(package_name()),
-        "--tokenizer=./{}/ModernBERT-large.runfiles/:tokenizer".format(package_name()),
-    ],
-)
-
-oci_image(
-    name = "image_",
-    base = "@distroless_cc_debian12",
-    entrypoint = ":entrypoint",
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    tars = [":archive"],
-)
-
-platform_transition_filegroup(
-    name = "image",
-    srcs = [":image_"],
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    target_platform = "@zml//platforms:linux_amd64",
-)
-
-oci_load(
-    name = "load",
-    image = ":image",
-    repo_tags = [
-        "distroless/ztei:latest",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-)
-
-oci_push(
-    name = "push",
-    image = ":image",
-    remote_tags = ["latest"],
-    repository = "index.docker.io/vctrmn/ztei",
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-)
+# expand_template(
+#     name = "entrypoint",
+#     data = [
+#         ":ModernBERT-large",
+#         "@answerdotai-ModernBERT-large//:model.safetensors",
+#         "@answerdotai-ModernBERT-large//:tokenizer",
+#     ],
+#     substitutions = {
+#         ":weights": "$(rlocationpath @answerdotai-ModernBERT-large//:model.safetensors)",
+#         ":tokenizer": "$(rlocationpath @answerdotai-ModernBERT-large//:tokenizer)",
+#     },
+#     tags = [
+#         "no_ci",
+#     ],
+#     template = [
+#         "./{}/ModernBERT-large".format(package_name()),
+#         "--weights=./{}/ModernBERT-large.runfiles/:weights".format(package_name()),
+#         "--tokenizer=./{}/ModernBERT-large.runfiles/:tokenizer".format(package_name()),
+#     ],
+# )
+#
+# oci_image(
+#     name = "image_",
+#     base = "@distroless_cc_debian12",
+#     entrypoint = ":entrypoint",
+#     target_compatible_with = [
+#         "@platforms//os:linux",
+#     ],
+#     tars = [":archive"],
+# )
+#
+# platform_transition_filegroup(
+#     name = "image",
+#     srcs = [":image_"],
+#     target_platform = "@zml//platforms:linux_amd64",
+# )
+#
+# oci_load(
+#     name = "load",
+#     image = ":image",
+#     repo_tags = [
+#         "distroless/ztei:latest",
+#     ],
+# )
+#
+# oci_push(
+#     name = "push",
+#     image = ":image",
+#     remote_tags = ["latest"],
+#     repository = "index.docker.io/vctrmn/ztei",
+# )
