@@ -75,7 +75,7 @@ pub fn asyncMain() !void {
 
     // Step 2 - Initialize model struct with Tensors
     // It creates a Model struct with Tensor fields from BufferStore loaded shapes ?
-    var model_instance = try zml.aio.populateModelWithPrefix(ModernBertModel, model_allocator, model_buffers_store, "model");
+    var model_instance = try zml.aio.populateModelWithPrefix(ModernBertModel, model_allocator, model_buffers_store, app_config.model_prefix);
     model_instance.init(modernbert_options);
 
     // Define the expected input tensors dimensiosn for the model (this is metadata only, no memory yet allocated)
@@ -93,12 +93,12 @@ pub fn asyncMain() !void {
         .{ input_shape, app_config.pooling },
         model_buffers_store,
         platform,
-        "model",
+        app_config.model_prefix,
     });
 
     // Step 4 - Transfer model weights from host to platform/accelerator memory (in parallel to compilation)
     log.info("\tLoading weights to {s} memory", .{@tagName(platform.target)});
-    var model_buffers = try zml.aio.loadBuffersWithPrefix(ModernBertModel, .{modernbert_options}, model_buffers_store, model_allocator, platform, "model");
+    var model_buffers = try zml.aio.loadBuffersWithPrefix(ModernBertModel, .{modernbert_options}, model_buffers_store, model_allocator, platform, app_config.model_prefix);
     defer zml.aio.unloadBuffers(&model_buffers);
 
     // Step 5 - Wait for compilation + bind weights (model_buffers)

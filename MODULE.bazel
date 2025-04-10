@@ -32,9 +32,9 @@ use_repo(external_deps, "com_github_zigzap_zap", "com_github_hejsil_clap")
 # Huggingface extension
 huggingface = use_extension("@zml//bazel:huggingface.bzl", "huggingface")
 
-# Model: nomic-ai/modernbert-embed-base
+# Model: Alibaba-NLP/gte-modernbert-base
 huggingface.model(
-    name = "nomic-ai-modernbert-embed-base",
+    name = "Alibaba-NLP-gte-modernbert-base",
     build_file_content = """\
 package(default_visibility = ["//visibility:public"])
 filegroup(
@@ -52,15 +52,15 @@ filegroup(
     srcs = ["config.json"],
 )
 """,
-    commit = "d556a88e332558790b210f7bdbe87da2fa94a8d8",
+    commit = "bc02f0a92d1b6dd82108036f6cb4b7b423fb7434",
     includes = [
         "model.safetensors",
         "tokenizer.json",
         "config.json",
     ],
-    model = "nomic-ai/modernbert-embed-base",
+    model = "Alibaba-NLP/gte-modernbert-base",
 )
-use_repo(huggingface, "nomic-ai-modernbert-embed-base")
+use_repo(huggingface, "Alibaba-NLP-gte-modernbert-base")
 
 # Model : answerdotai/ModernBERT-large
 huggingface.model(

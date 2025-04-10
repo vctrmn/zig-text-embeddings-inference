@@ -1,5 +1,6 @@
 const std = @import("std");
 const clap = @import("clap");
+const ModernBertOptions = @import("models/modernbert.zig").ModernBertOptions;
 
 const log = std.log.scoped(.config);
 
@@ -9,7 +10,8 @@ const cli_params = clap.parseParamsComptime(
     \\--port                    <UINT>      port to listen on (default: 3000)
     \\--tokenizer               <PATH>      tokenizer.json path (required)
     \\--model                   <PATH>      model.safetensors path (required)
-    //TODO:    \\--config                  <PATH>      config.json path (required)
+    //TODO: \\--config                  <PATH>      config.json path (required)
+    \\--model-prefix            <STRING>    model prefix in safetensors (default: "")
     \\--seq-len                 <UINT>      sequence length (default: 512, up to 8192 for modernbert)
     \\--pooling                 <STRING>    control the pooling method (possible values: ['mean', 'cls', 'last-token'] default: mean)
 );
@@ -32,6 +34,7 @@ pub const AppConfig = struct {
     port: u16,
     tokenizer_path: []const u8,
     safetensors_path: []const u8,
+    model_prefix: []const u8,
     seq_len: i64,
     pooling: PoolingMethod,
 };
@@ -127,6 +130,7 @@ pub fn parseConfig(allocator: std.mem.Allocator) !AppConfig {
         .port = @intCast(cli.args.port orelse 3000),
         .tokenizer_path = tokenizer_path,
         .safetensors_path = model_path,
+        .model_prefix = cli.args.@"model-prefix" orelse "",
         .seq_len = @as(i64, @intCast(cli.args.@"seq-len" orelse 256)),
         .pooling = pooling,
     };

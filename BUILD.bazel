@@ -18,31 +18,32 @@ zig_cc_binary(
 )
 
 cc_binary(
-    name = "modernbert-embed-base",
-    args = [
-        # "--config=$(location @nomic-ai-modernbert-embed-base//:config)",
-        "--model=$(location @nomic-ai-modernbert-embed-base//:model.safetensors)",
-        "--tokenizer=$(location @nomic-ai-modernbert-embed-base//:tokenizer)",
-    ],
-    data = [
-        "@nomic-ai-modernbert-embed-base//:config",
-        "@nomic-ai-modernbert-embed-base//:model.safetensors",
-        "@nomic-ai-modernbert-embed-base//:tokenizer",
-    ],
-    deps = [":app_lib"],
-)
-
-cc_binary(
     name = "ModernBERT-large",
     args = [
         # "--config=$(location @answerdotai-ModernBERT-large//:config)",
         "--model=$(location @answerdotai-ModernBERT-large//:model.safetensors)",
         "--tokenizer=$(location @answerdotai-ModernBERT-large//:tokenizer)",
+        "--model-prefix=model",
     ],
     data = [
         "@answerdotai-ModernBERT-large//:config",
         "@answerdotai-ModernBERT-large//:model.safetensors",
         "@answerdotai-ModernBERT-large//:tokenizer",
+    ],
+    deps = [":app_lib"],
+)
+
+cc_binary(
+    name = "gte-modernbert-base",
+    args = [
+        # "--config=$(location @Alibaba-NLP-gte-modernbert-base//:config)",
+        "--model=$(location @Alibaba-NLP-gte-modernbert-base//:model.safetensors)",
+        "--tokenizer=$(location @Alibaba-NLP-gte-modernbert-base//:tokenizer)",
+    ],
+    data = [
+        "@Alibaba-NLP-gte-modernbert-base//:config",
+        "@Alibaba-NLP-gte-modernbert-base//:model.safetensors",
+        "@Alibaba-NLP-gte-modernbert-base//:tokenizer",
     ],
     deps = [":app_lib"],
 )
