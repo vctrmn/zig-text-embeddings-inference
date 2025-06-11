@@ -6,22 +6,31 @@ module(
     version = "0.0.0",
 )
 
-bazel_dep(name = "rules_zig", version = "20250314.0-b9739c6")  # Should match ZML rules_zig version and not the one from bcr
+bazel_dep(name = "rules_zig", version = "20250530.0-5084f1f")  # Should match ZML rules_zig version and not the one from bcr
 bazel_dep(name = "zml", version = "0.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "aspect_bazel_lib", version = "2.14.0")
 bazel_dep(name = "rules_oci", version = "2.2.5")
 bazel_dep(name = "platforms", version = "0.0.11")
 
+# Add toolchains_llvm_bootstrapped dependency (same as ZML uses)
+bazel_dep(name = "toolchains_llvm_bootstrapped", version = "0.2.3")
+
 # Configure Zig toolchain
 zig = use_extension("@rules_zig//zig:extensions.bzl", "zig")
-zig.toolchain(zig_version = "0.14.0")
+zig.toolchain(zig_version = "0.14.1")
+
+# Register LLVM toolchains (same as ZML does)
+register_toolchains(
+    "@toolchains_llvm_bootstrapped//toolchain:linux_amd64",
+    "@toolchains_llvm_bootstrapped//toolchain:linux_aarch64",
+)
 
 # Use ZML repository for the zml bazel_dep
 git_override(
     module_name = "zml",
     remote = "https://github.com/vctrmn/zml.git",
-    commit = "b85ca4549fef74887ba951bed088901b5abd6ce7",  # feature/compile-with-prefix branch @ 18/04/2025
+    commit = "2eb0af0994778013a66cfc935ce44bda209ef6de",  # patch/text-embeddings-inference branch @ 11/06/2025
 )
 
 # ZAP does not provide bazel integration (no MODULE.bazel / BUILD.bazel),

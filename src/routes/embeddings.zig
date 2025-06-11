@@ -190,7 +190,7 @@ pub const EmbeddingsEndpoint = struct {
         defer input_ids_tensor.deinit();
 
         // Model inference
-        var model_output = self.model_instance.call(.{ input_ids_tensor, self.pooling_method });
+        var model_output = self.model_instance.call(.{input_ids_tensor});
         defer zml.aio.unloadBuffers(&model_output);
         const cpu_result = try model_output.toHostAlloc(allocator);
         const embedding = try allocator.dupe(f32, cpu_result.items(f32));

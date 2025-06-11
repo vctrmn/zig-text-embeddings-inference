@@ -5,12 +5,11 @@ const PoolingMethod = @import("../config.zig").PoolingMethod;
 const asynk = @import("async");
 const stdx = @import("stdx");
 const zml = @import("zml");
-
 const Tensor = zml.Tensor;
 
 pub const ModernBertOptions = struct {
     num_attention_heads: i64,
-    pad_token_id: u32,
+    pad_token: u32,
     local_attention: u32,
     tie_word_embeddings: bool = false,
 };
@@ -57,6 +56,7 @@ pub const ModernBertModel = struct {
     pub fn init(self: *ModernBertModel, options: ModernBertOptions) void {
         self.options = options;
         self.final_norm.eps = 1e-5;
+        self.embeddings.norm.eps = 1e-5;
         for (self.layers, 0..) |*encoder_layer, layer_idx| {
             encoder_layer.attn.Wqkv.weight = encoder_layer.attn.Wqkv.weight.withSharding(.{0});
             encoder_layer.attn.Wo.weight = encoder_layer.attn.Wo.weight.withSharding(.{1});
@@ -74,7 +74,7 @@ pub const ModernBertModel = struct {
     pub fn forward(self: ModernBertModel, input_ids: Tensor) Tensor {
         var hidden_states: Tensor = zml.call(self.embeddings, .forward, .{input_ids}).withTags(.{ .b, .s, .d });
 
-        const global_mask = globalAttnMask(input_ids, hidden_states.dtype(), self.options.pad_token_id);
+        const global_mask = globalAttnMask(input_ids, hidden_states.dtype(), self.options.pad_token);
         const local_mask = localAttnMask(global_mask, self.options.local_attention);
 
         // Process through all encoder layers
@@ -108,7 +108,7 @@ pub const ModernBertModel = struct {
     pub fn forwardEmbeddingsMeanPooling(self: ModernBertModel, input_ids: Tensor) Tensor {
         // STEP 1 : input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         const token_embeddings: Tensor = self.forward(input_ids);
-        const attn_mask: Tensor = input_ids.cmp(.NE, Tensor.scalar(self.options.pad_token_id, input_ids.dtype())).convert(.f32);
+        const attn_mask: Tensor = input_ids.cmp(.NE, Tensor.scalar(self.options.pad_token, input_ids.dtype())).convert(.f32);
 
         // .b, .s => .b, .s, .d
         // Create a 3D mask and broadcast to embeddings
@@ -131,17 +131,17 @@ pub const ModernBertModel = struct {
 
     /// Find [PAD] tokens in inputs, and assign them a -inf attention mask.
     /// Output shapes follows zml.nn.sdpa convention: .{ .b, .q, .k }
-    pub fn globalAttnMask(input_ids: Tensor, dt: zml.DataType, pad_token_id: u32) Tensor {
+    pub fn globalAttnMask(input_ids: Tensor, dt: zml.DataType, pad_token: u32) Tensor {
         const ids = input_ids.withTags(.{ .b, .k });
 
         // Mask keys where corresponding token is [PAD]
-        const padding = ids.cmp(.EQ, Tensor.scalar(pad_token_id, ids.dtype()));
+        const padding = ids.cmp(.EQ, Tensor.scalar(pad_token, ids.dtype()));
         const pad_mask = padding.select(Tensor.constant(.{}, dt.minValue()), Tensor.constant(.{}, dt.zero()));
 
         // Broadcast to the desired output shape.
         const seq_len = ids.dim(.k);
         const pad_mask_shape = zml.Shape.init(.{ .b = pad_mask.dim(.b), .q = seq_len, .k = seq_len }, dt);
-        return pad_mask.broad(pad_mask_shape).print();
+        return pad_mask.broad(pad_mask_shape);
     }
 
     /// Restrict global attn mask to a sliding window.
@@ -158,7 +158,7 @@ pub const ModernBertModel = struct {
         // Create sliding window mask (1 for positions within window, 0 outside)
         const window_mask = distance.cmp(.LE, Tensor.scalar(@divExact(window_size, 2), .i32));
         const minus_inf = Tensor.constant(mask_shape, mask_shape.dtype().minValue());
-        return window_mask.select(global_mask, minus_inf).print();
+        return window_mask.select(global_mask, minus_inf);
     }
 };
 
@@ -260,7 +260,7 @@ pub const ModernBertAttention = struct {
         // Layer 0, 3, 6, 9, 12 ... use global RoPE
         // Layer 1, 2, 4, 5, 7, 8, 10, 11 ... use local RoPE
         const rope_opts = zml.nn.RopeOpts{
-            .impl = .sequential,
+            .layout = .sequential,
             .freq_base = if (self.is_global_attention) 160_000 else 10_000,
         };
 
