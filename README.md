@@ -31,11 +31,11 @@ chmod +x /usr/local/bin/bazel
 ### Build and run the server
 
 ```bash
-bazel run -c opt //:ModernBERT-large
+bazel run --config=release //:ModernBERT-large
 ```
 
 ```bash
-bazel run -c opt --@zml//runtimes:cuda=true //:ModernBERT-large
+bazel run --config=release --@zml//runtimes:cuda=true //:ModernBERT-large
 ```
 
 ## Available Models

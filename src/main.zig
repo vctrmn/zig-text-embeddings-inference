@@ -24,7 +24,7 @@ pub const std_options: std.Options = .{
 // TODO: Remove hardcoded modernbert options
 // Model configuration (config.json)
 const modernbert_options = ModernBertOptions{
-    .pad_token_id = 50283,
+    .pad_token = 50283,
     .num_attention_heads = 16,
     .tie_word_embeddings = false,
     .local_attention = 128,
@@ -90,7 +90,7 @@ pub fn asyncMain() !void {
         allocator,
         ModernBertModel.forwardEmbeddings,
         .{modernbert_options},
-        .{ input_shape, app_config.pooling },
+        .{ input_shape, app_config.pooling }, // pooling as compile-time argument
         model_buffers_store,
         platform,
         app_config.model_prefix,
